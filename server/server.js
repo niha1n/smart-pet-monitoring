@@ -1,6 +1,8 @@
 import express from 'express';
 import bodyParser from 'body-parser';
 import { sendMotionAlert } from './alertHandler.js';
+import { rotateServoAndBack } from './feeder.js';
+import { calculateDistance } from './distanceCalculator.js';
 
 const app = express();
 
@@ -20,16 +22,23 @@ let sensorData = null;
 let lastLatitude = 8.546;
 let lastLongitude = 75.67;
 
+const setPointLatitude = 8.543; // Replace with your desired set point latitude
+const setPointLongitude = 75.654; // Replace with your desired set point longitude
+
 let isMotionAlertSent = false;
+
+function delay(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 // API endpoint to receive sensor data
 
 app.post('/sensor-data', (req, res) => {
   sensorData = req.body;
-  if (!isMotionAlertSent && sensorData.pulse>=200) {
-    sendMotionAlert();
+  if (!isMotionAlertSent && sensorData.pulse >= 200) {
+    // sendMotionAlert('Attention: Heart Rate of your pet is HIGHER tha usual');
     isMotionAlertSent = true;
-  } else if (isMotionAlertSent && sensorData.pulse>=200) {
+  } else if (isMotionAlertSent && sensorData.pulse >= 200) {
     isMotionAlertSent = false;
   }
   res.status(200).send('Data received successfully');
@@ -53,6 +62,16 @@ app.post('/location-data', (req, res) => {
     // Update the last seen latitude and longitude
     lastLatitude = latitude;
     lastLongitude = longitude;
+
+    const distanceFromSetPoint = calculateDistance(
+      setPointLatitude,
+      setPointLongitude,
+      latitude,
+      longitude
+    );
+    if (distanceFromSetPoint <= distanceThreshold) {
+      sendMotionAlert('Attention: Your pet is outside the house.');
+    }
 
     // Process and store the received GPS data as needed
 
@@ -82,6 +101,16 @@ app.get('/api/location-data', (req, res) => {
   } else {
     res.status(404).json({ error: 'No location data available' });
   }
+});
+
+app.get('/rotateServo', (req, res) => {
+  rotateServoAndBack()
+    .then(() => {
+      res.status(200).send('Servo rotated successfully');
+    })
+    .catch((error) => {
+      console.error('An error occurred during servo control:', error.message);
+    });
 });
 
 // Start the server

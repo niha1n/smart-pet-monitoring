@@ -5,6 +5,8 @@ import { Button } from 'react-bootstrap';
 const LandingPage = () => {
   const [sensorData, setSensorData] = useState(null);
   const [pulseRateAlert, setPulseRateAlert] = useState(0);
+  const [locationAlert, setLocationAlert] = useState(0);
+
 
   const [loading, setLoading] = useState(true);
 
@@ -34,7 +36,7 @@ const LandingPage = () => {
       clearInterval(interval); // Cleanup interval on component unmount
     };
   }, []);
-
+  
   const locationHandler = async () => {
     const locationResponse = await axios.get(
       'http://localhost:5000/api/location-data'
@@ -42,6 +44,12 @@ const LandingPage = () => {
     console.log(locationResponse);
     const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${locationResponse.data.latitude},${locationResponse.data.longitude}`;
     window.location.href = googleMapsUrl;
+  };
+  const dispenseFood = async () => {
+    const dispense = await axios.get(
+      'http://localhost:5000/rotateServo'
+    );
+    console.log('Food Dispensed');
   };
 
   return (
@@ -53,12 +61,21 @@ const LandingPage = () => {
             <div className="card-body">
               <h6 className="card-title">Pulse Rate: {sensorData.pulse}</h6>
             </div>
-            
           </div>
           <div className="card mt-4">
             <div className="card-body">
               <h6 className="card-text">
-                Status: {pulseRateAlert ? 'Heart Rate Higher than usual!' : 'Safe'}
+                Status:{' '}
+                {(() => {
+                  
+                  if (locationAlert) {
+                    return 'Your pet is outside the house!';
+                  } else if (pulseRateAlert) {
+                    return 'Heart Rate Higher than usual!';
+                  } else {
+                    return 'Safe';
+                  }
+                })()}
               </h6>
             </div>
           </div>
@@ -68,17 +85,16 @@ const LandingPage = () => {
         </>
       ) : (
         <>
-        <p className="mt-4">No sensor data available</p>
-        <Button className="mt-4" onClick={locationHandler}>
+          <p className="mt-4">No sensor data available</p>
+          <Button className="mt-4" onClick={locationHandler}>
             Last Seen Location
           </Button>
-          
-          </>
+        </>
       )}
-      <br/>
-      <Button className="mt-4 green" onClick={console.log("Food Dispensed")}>
-            Dispense Food
-          </Button>
+      <br />
+      <Button className="mt-4 green" onClick={console.log('Food Dispensed')}>
+        Dispense Food
+      </Button>
     </div>
   );
 };

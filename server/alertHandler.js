@@ -6,10 +6,8 @@ const accountSid = process.env.TWILIO_ACCOUNT_SID;
 const authToken = process.env.TWILIO_AUTH_TOKEN;
 const client = twilio(accountSid, authToken);
 
-export function sendMotionAlert() {
+export function sendMotionAlert( messageBody ) {
   
-
-  const messageBody = `Attention: Heart Rate of your pet is HIGHER tha usual`;
 
   client.messages
     .create({
